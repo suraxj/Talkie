@@ -45,12 +45,16 @@ app.use(cookieParser());
 app.use(cors({ origin: CLIENT_ORIGIN, credentials: true }));
 
 // Routes setup
-app.use("/api/status", (req, res)=> res.send("Server is live"));
+app.use("/api/status", (req, res) => res.send("Server is live"));
 app.use("/api/auth", userRouter)
 app.use("/api/messages", messageRouter)
 
 // Connect to MongoDB
 await connectDB();
 
+if(process.env.NODE_ENV === "production"){
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, ()=> console.log("Server is running on PORT: " + PORT));
+}
+// Export server for vercel
+export default server;
