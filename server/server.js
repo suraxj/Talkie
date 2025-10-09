@@ -23,7 +23,7 @@ export const io = new Server(server, {
 export const userSocketMap = {}; // { userId: socketId }
 
 // Socket.io connection handler
-io.on("connection", (socket)=>{
+    io.on("connection", (socket)=>{
     const userId = socket.handshake.query.userId;
     console.log("user Connected", userId);
 
@@ -52,9 +52,5 @@ app.use("/api/messages", messageRouter)
 // Connect to MongoDB
 await connectDB();
 
-if(process.env.NODE_ENV === "production"){
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, ()=> console.log("Server is running on PORT: " + PORT));
-}
-// Export server for vercel
-export default server;

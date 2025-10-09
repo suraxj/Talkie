@@ -19,7 +19,6 @@ const Sidebar = () => {
 
    useEffect(()=>{
     getUsers()
-    console.log(users)
    }, [onlineUsers])
   return (
     <div

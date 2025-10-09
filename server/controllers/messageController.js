@@ -10,7 +10,7 @@ export const getUserForSidebar = async (req, res)=>{
 
         // Count number of message not seen
         const unseenMessages = {}
-        const promises =filteredUsers.map(async (user)=>{
+        const promises = filteredUsers.map(async (user)=>{
             const messages = await Message.find({senderId: user._id, receiverId:
                 userId, seen: false})
                 if(messages.length > 0){
@@ -26,7 +26,7 @@ export const getUserForSidebar = async (req, res)=>{
     }
 }
 
-// Get const Messages for selected user
+// Get all Messages for selected user
 export const getMessages = async (req, res) =>{
     try {
         const { id: selectedUserId } = req.params;

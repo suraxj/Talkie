@@ -9,37 +9,30 @@ axios.defaults.withCredentials = true;
 
 export const AuthContext = createContext();
 
-export const AuthProvider = ({ children }) => {   
-
-  const [token, setToken] = useState(localStorage.getItem("token"));
+export const AuthProvider = ({ children }) => {
   const [authUser, setAuthUser] = useState(null);
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [socket, setSocket] = useState(null);
 
-   // Check if user is authenticated and if so, set the user data and connect the socket
-    const checkAuth = async () => {
-        try{
-            const { data } = await axios.get("/api/auth/check");
-            if (data.success){
-                setAuthUser(data.user)
-                connectSocket(data.user)
+  const checkAuth = async () => {
+    try {
+      const { data } = await axios.get("/api/auth/check");
+      if (data.success) {
+        setAuthUser(data.user);
+        connectSocket(data.user);
+      }
+    } catch (error) {
+      // No toast — silent failure for logged-out users
+      console.log("Auth check failed:", error.response?.status || error.message);
+    }
+  };
 
-            }
-         } catch (error){
-                 toast.error(error.message)
-            }
-        }
-
-    // Login function
-     const login = async (state, credentials) => {
-     try {
+  const login = async (state, credentials) => {
+    try {
       const { data } = await axios.post(`/api/auth/${state}`, credentials);
       if (data.success) {
         setAuthUser(data.userData);
         connectSocket(data.userData);
-        axios.defaults.headers.common["token"] = data.token;
-        setToken(data.token);
-        localStorage.setItem("token", data.token)
         toast.success(data.message);
       } else {
         toast.error(data.message);
@@ -47,20 +40,20 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       toast.error(error.message);
     }
-  }
-
-  // Logout function
-  const logout = async () => {
-    localStorage.removeItem("token")
-    setToken(null);
-    setAuthUser(null);
-    setOnlineUsers([]);
-    axios.defaults.headers.common['token'] = null;
-    toast.success("Logged out successfully");
-    socket.disconnect();
   };
 
-  // Update profile
+  const logout = async () => {
+    try {
+      await axios.post("/api/auth/logout");
+      setAuthUser(null);
+      setOnlineUsers([]);
+      socket?.disconnect();
+      toast.success("Logged out successfully");
+    } catch (error) {
+      toast.error("Logout failed");
+    }
+  };
+
   const updateProfile = async (body) => {
     try {
       const { data } = await axios.put("/api/auth/update-profile", body);
@@ -73,40 +66,28 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-   // Connect socket function to handle socket connection and online users updates
-    const connectSocket = (userData)=>{
-      if(!userData || socket?.connected) return;
-            const newSocket = io(backendUrl, {
-                query: {
-                    userId: userData._id,
-                }
-            });
-            newSocket.connect();
-            setSocket(newSocket);
+  const connectSocket = (userData) => {
+    if (!userData || socket?.connected) return;
 
-            newSocket.on("getOnlineUsers", (userIds)=>{
-                setOnlineUsers(userIds)
-            })
-        }
-         useEffect(()=>{
-            if(token){
-            axios.defaults.headers.common["token"] = token;
-          }
-          checkAuth();
-  }, [token]);
+    const newSocket = io(backendUrl, {
+      query: { userId: userData._id },
+    });
 
-  const value = {
-    axios,
-    authUser,
-    onlineUsers,
-    socket,
-    login,
-    logout,
-    updateProfile,
+    newSocket.on("getOnlineUsers", (userIds) => {
+      setOnlineUsers(userIds);
+    });
+
+    setSocket(newSocket);
   };
 
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider
+      value={{ axios, authUser, onlineUsers, socket, login, logout, updateProfile }}
+    >
       {children}
     </AuthContext.Provider>
   );
